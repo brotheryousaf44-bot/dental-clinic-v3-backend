@@ -1,0 +1,36 @@
+Dental Clinic v3 - Backend + Web Dashboard - Setup
+====================================================
+
+Ye zip v3 ka backend aur web version hai. APK akela kaam nahi karega,
+pehle ye server chalana zaroori hai, warna app me login nahi hoga aur
+purane demo PIN 1111/2222/3333/4444 bhi kaam nahi karenge.
+
+Clinic computer par (Linux / Mac):
+  1. Zip kholo, folder me jao.
+  2. ./run.sh chalao. Pehli dafa venv aur FastAPI install hoga.
+  3. Browser me http://localhost:8000 kholo.
+  4. Setup card me doctor account banao (name, username, password).
+  5. Login karke mareez manually add karo, har mareez ka app PIN set karo.
+
+Clinic computer Windows par ho to run.sh nahi chalega:
+  1. Python 3.12 install karo (python.org se).
+  2. Is folder me command prompt kholo aur chalao:
+     pip install -r requirements.txt
+     python -m uvicorn app:app --host 0.0.0.0 --port 8000
+  3. Phir browser me http://localhost:8000 kholo, baqi steps wahi hain.
+
+Phone (v3 app) ko server se jorna:
+  - Phone aur clinic computer ek hi WiFi par hon.
+  - App me Login screen ya Settings me Server URL dalo, misal:
+    http://192.168.1.5:8000  (apne computer ka LAN IP dalo)
+  - "Server Check Karo" dabao, "Server mil gaya" ana chahiye.
+  - Phir staff username/password ya mareez phone + PIN se login karo.
+
+Data: backend/dental_clinic.db me save hota hai (pehli dafa khali banta hai).
+Backup ke liye bas ye ek file copy kar lo.
+
+VPS par host karna ho to Dockerfile sath hai. VPS par deploy se pehle
+DENTAL_SECRET zaroor badlo, default secret kabhi live use na karo.
+
+WhatsApp: button dabane se WhatsApp khulta hai, message pehle se likha
+hota hai, Send tumhe khud dabana hai. Auto-send nahi hota.

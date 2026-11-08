@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Dental Clinic — Doctor Dashboard</title>
+<style>
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; background: #F2F5F5; color: #1B2A2A; }
+  header { background: linear-gradient(135deg, #0E7C7B, #0A5E5D); color: #fff; padding: 18px 24px; }
+  header h1 { margin: 0; font-size: 24px; }
+  header p { margin: 4px 0 0; opacity: .9; font-size: 14px; }
+  header .who { float: right; font-size: 14px; text-align: right; }
+  header .who button { background: rgba(255,255,255,.2); color: #fff; border: 1px solid #fff; border-radius: 8px; padding: 6px 12px; cursor: pointer; }
+  nav { display: flex; flex-wrap: wrap; gap: 8px; padding: 12px 24px; background: #fff; border-bottom: 1px solid #ddd; position: sticky; top: 0; z-index: 5; }
+  nav button { border: 1px solid #0E7C7B; background: #fff; color: #0A5E5D; border-radius: 20px; padding: 8px 16px; cursor: pointer; font-size: 14px; font-weight: 600; }
+  nav button.active { background: #0E7C7B; color: #fff; }
+  main { max-width: 1100px; margin: 0 auto; padding: 20px 24px 60px; }
+  .card { background: #fff; border: 1px solid #e3e8e8; border-radius: 14px; padding: 18px; margin-bottom: 16px; }
+  .card h2 { margin: 0 0 4px; font-size: 19px; color: #0A5E5D; }
+  .card h3 { margin: 0 0 10px; font-size: 16px; color: #0A5E5D; }
+  .muted { color: #5F7373; font-size: 14px; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; }
+  .stat { background: #fff; border: 1px solid #e3e8e8; border-radius: 14px; padding: 16px; }
+  .stat b { display: block; font-size: 26px; color: #0A5E5D; }
+  .stat span { color: #5F7373; font-size: 13px; }
+  table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  th, td { text-align: left; padding: 9px 8px; border-bottom: 1px solid #eee; vertical-align: top; }
+  th { color: #0A5E5D; }
+  input, select, textarea { width: 100%; padding: 10px 12px; border: 1px solid #b9c6c6; border-radius: 10px; font-size: 15px; color: #1B2A2A; background: #fff; margin: 4px 0 10px; }
+  label { font-size: 13px; font-weight: 600; color: #5F7373; }
+  .btn { background: #0E7C7B; color: #fff; border: none; border-radius: 10px; padding: 11px 18px; font-size: 15px; font-weight: 700; cursor: pointer; }
+  .btn.sec { background: #fff; color: #0A5E5D; border: 1px solid #0E7C7B; }
+  .btn.wa { background: #25D366; color: #fff; }
+  .btn.sm { padding: 6px 10px; font-size: 13px; border-radius: 8px; }
+  .chip { display: inline-block; padding: 3px 10px; border-radius: 20px; font-size: 12px; font-weight: 700; }
+  .chip.amber { background: #FFF3E0; color: #7A4A00; }
+  .chip.green { background: #E8F5E9; color: #1B5E20; }
+  .chip.red { background: #FDECEA; color: #7A1F1A; }
+  .chip.blue { background: #E3F2FD; color: #0D47A1; }
+  .row { display: flex; gap: 10px; flex-wrap: wrap; align-items: end; }
+  .row > div { flex: 1; min-width: 160px; }
+  #loginBox, #setupBox { max-width: 440px; margin: 60px auto; }
+  .hidden { display: none !important; }
+  .bar { height: 10px; background: #E0F2F1; border-radius: 6px; overflow: hidden; }
+  .bar > div { height: 100%; background: #0E7C7B; }
+  .err { color: #C0392B; font-weight: 600; }
+  .ok { color: #1E7D32; font-weight: 600; }
+</style>
+</head>
+<body>
+<header>
+  <div class="who" id="whoBox"></div>
+  <h1>🦷 Dental Clinic</h1>
+  <p>Doctor dashboard — patients, appointments, treatments, payments. Same live data as the patient app.</p>
+</header>
+
+<div id="authWrap">
+  <div class="card" id="setupBox" class="hidden" style="display:none">
+    <h2>Clinic setup — first time only</h2>
+    <p class="muted">No account exists yet. Create the doctor / owner account. This can only be done once.</p>
+    <label>Your name</label><input id="suName" placeholder="e.g. Dr. Ahmed">
+    <label>Username</label><input id="suUser" placeholder="e.g. doctor">
+    <label>Password</label><input id="suPass" type="password" placeholder="at least 4 characters">
+    <button class="btn" onclick="doSetup()">Create doctor account</button>
+    <p id="setupMsg"></p>
+  </div>
+  <div class="card" id="loginBox" style="display:none">
+    <h2>Login — staff</h2>
+    <p class="muted">Doctor, owner or reception. Patients use the phone app with phone + PIN.</p>
+    <label>Username</label><input id="liUser" placeholder="username">
+    <label>Password</label><input id="liPass" type="password" placeholder="password">
+    <button class="btn" onclick="doLogin()">Login</button>
+    <p id="loginMsg"></p>
+  </div>
+</div>
+
+<div id="appWrap" style="display:none">
+  <nav id="tabs">
+    <button data-tab="dash" class="active" onclick="showTab('dash')">Dashboard</button>
+    <button data-tab="patients" onclick="showTab('patients')">Patients</button>
+    <button data-tab="appts" onclick="showTab('appts')">Appointments</button>
+    <button data-tab="treat" onclick="showTab('treat')">Treatments</button>
+    <button data-tab="pay" onclick="showTab('pay')">Payments</button>
+    <button data-tab="income" onclick="showTab('income')">Income</button>
+    <button data-tab="due" onclick="showTab('due')">Checkup Due</button>
+  </nav>
+  <main>
+    <section id="tab-dash"></section>
+    <section id="tab-patients" class="hidden"></section>
+    <section id="tab-appts" class="hidden"></section>
+    <section id="tab-treat" class="hidden"></section>
+    <section id="tab-pay" class="hidden"></section>
+    <section id="tab-income" class="hidden"></section>
+    <section id="tab-due" class="hidden"></section>
+  </main>
+</div>
+
+<script>
+const API = '/api';
+let TOKEN = localStorage.getItem('dc_token') || '';
+let ME = null;
+let PATIENTS = [];
+let TREATMENTS = [];
+let curPatient = null;
+
+async function api(path, method = 'GET', body = null) {
+  const r = await fetch(API + path, {
+    method, headers: { 'Content-Type': 'application/json', ...(TOKEN ? { Authorization: 'Bearer ' + TOKEN } : {}) },
+    body: body ? JSON.stringify(body) : null
+  });
+  const data = await r.json().catch(() => ({}));
+  if (!r.ok) throw new Error(data.detail || ('Error ' + r.status));
+  return data;
+}
+function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); }
+function rs(n) { return 'Rs ' + Number(n || 0).toLocaleString('en-PK'); }
+function todayISO() { return new Date().toISOString().slice(0, 10); }
+function waPhone(p) {
+  let d = String(p || '').replace(/\D/g, '');
+  if (d.startsWith('00')) d = d.slice(2);
+  if (d.startsWith('0')) d = '92' + d.slice(1);
+  if (d.length === 10 && d.startsWith('3')) d = '92' + d;
+  return d;
+}
+function waLink(p, msg) { return 'https://wa.me/' + waPhone(p) + '?text=' + encodeURIComponent(msg); }
+function showTab(t) {
+  document.querySelectorAll('#tabs button').forEach(b => b.classList.toggle('active', b.dataset.tab === t));
+  ['dash', 'patients', 'appts', 'treat', 'pay', 'income', 'due'].forEach(x =>
+    document.getElementById('tab-' + x).classList.toggle('hidden', x !== t));
+  ({ dash: loadDash, patients: loadPatients, appts: loadAppts, treat: loadTreat, pay: loadPay, income: loadIncome, due: loadDue })[t]();
+}
+function logout() { TOKEN = ''; ME = null; localStorage.removeItem('dc_token'); location.reload(); }
+
+async function boot() {
+  try {
+    const s = await api('/setup/status');
+    if (s.setup_needed) { document.getElementById('setupBox').style.display = 'block'; return; }
+  } catch (e) { document.getElementById('loginBox').style.display = 'block'; document.getElementById('loginMsg').textContent = 'Server se connect nahi ho raha: ' + e.message; return; }
+  if (!TOKEN) { document.getElementById('loginBox').style.display = 'block'; return; }
+  try { ME = await api('/auth/me'); enterApp(); }
+  catch (e) { TOKEN = ''; document.getElementById('loginBox').style.display = 'block'; }
+}
+async function doSetup() {
+  const msg = document.getElementById('setupMsg');
+  try {
+    const r = await api('/setup', 'POST', { name: suName.value.trim(), username: suUser.value.trim(), password: suPass.value });
+    TOKEN = r.token; localStorage.setItem('dc_token', TOKEN); ME = r.user; msg.textContent = ''; enterApp();
+  } catch (e) { msg.innerHTML = '<span class="err">' + esc(e.message) + '</span>'; }
+}
+async function doLogin() {
+  const msg = document.getElementById('loginMsg');
+  try {
+    const r = await api('/auth/login', 'POST', { mode: 'staff', username: liUser.value.trim(), password: liPass.value });
+    TOKEN = r.token; localStorage.setItem('dc_token', TOKEN); ME = r.user; enterApp();
+  } catch (e) { msg.innerHTML = '<span class="err">' + esc(e.message) + '</span>'; }
+}
+function enterApp() {
+  document.getElementById('authWrap').style.display = 'none';
+  document.getElementById('appWrap').style.display = 'block';
+  document.getElementById('whoBox').innerHTML = esc(ME.name) + ' (' + esc(ME.role) + ')<br><button onclick="logout()">Logout</button>';
+  showTab('dash');
+}
+
+async function loadDash() {
+  const d = await api('/reports/dashboard');
+  const inc = await api('/reports/incomplete');
+  document.getElementById('tab-dash').innerHTML = `
+    <div class="grid">
+      <div class="stat"><b>${d.today_appointments}</b><span>Appointments today</span></div>
+      <div class="stat"><b>${rs(d.today_income)}</b><span>Income today</span></div>
+      <div class="stat"><b>${d.incomplete_treatments}</b><span>Incomplete treatments</span></div>
+      <div class="stat"><b>${d.checkup_due}</b><span>Checkups due (6+ months)</span></div>
+      <div class="stat"><b>${rs(d.pending_total)}</b><span>Pending payments (baaki)</span></div>
+      <div class="stat"><b>${d.total_patients}</b><span>Total patients</span></div>
+    </div>
+    <div class="card"><h2>Incomplete treatments — sitting baaki</h2>
+    <p class="muted">Yehi video ka Problem 1 hai: dard khatam hote hi mareez wapas nahi aata. WhatsApp par reminder bhejo.</p>
+    ${inc.length ? `<table><tr><th>Patient</th><th>Treatment</th><th>Sittings</th><th>Next sitting</th><th></th></tr>` +
+      inc.map(t => `<tr><td>${esc(t.patient_name)}<br><span class="muted">${esc(t.patient_phone)}</span></td>
+        <td>${esc(t.type)} ${esc(t.tooth_no)}</td>
+        <td>${t.done_sittings}/${t.total_sittings}</td>
+        <td>${esc(t.next_sitting || '-')}</td>
+        <td><a class="btn wa sm" target="_blank" href="${waLink(t.patient_phone, 'Assalam-o-Alaikum ' + t.patient_name + ', Dental Clinic se reminder: aapka ' + t.type + ' ' + t.tooth_no + ' treatment adhoora hai (' + t.done_sittings + '/' + t.total_sittings + ' sittings). Agli sitting ' + (t.next_sitting || 'jald') + ' hai. Dard khatam hone ka matlab treatment poora hona nahi. Apni sitting confirm karein. Shukriya.')}">WhatsApp reminder</a></td></tr>`).join('') + `</table>`
+      : '<p class="ok">Koi incomplete treatment nahi. Sab poora hai.</p>'}</div>`;
+}
+
+async function loadPatients() {
+  PATIENTS = await api('/patients');
+  document.getElementById('tab-patients').innerHTML = `
+    <div class="card"><h2>Patients</h2>
+    <div class="row"><div><label>Search by name or phone</label><input id="pSearch" placeholder="e.g. Ahmed or 0300..." oninput="filterPatients()"></div>
+    <div style="flex:0"><button class="btn" onclick="openPatientForm()">+ Naya Mareez</button></div></div>
+    <div id="pList"></div></div>
+    <div class="card hidden" id="pFormCard"><h3 id="pFormTitle">Naya Mareez</h3>
+      <div class="row">
+        <div><label>Name *</label><input id="pfName"></div>
+        <div><label>Age</label><input id="pfAge" type="number" min="0"></div>
+        <div><label>Phone *</label><input id="pfPhone" placeholder="0300-1234567"></div>
+        <div><label>WhatsApp (agar alag ho)</label><input id="pfWa"></div>
+      </div>
+      <div class="row">
+        <div><label>Allergy</label><input id="pfAllergy" value="None"></div>
+        <div><label>Last checkup date</label><input id="pfCheck" type="date"></div>
+        <div><label>Patient app PIN (4+ digits, blank = no app login)</label><input id="pfPin" placeholder="e.g. 1234"></div>
+      </div>
+      <label>Notes</label><input id="pfNotes">
+      <button class="btn" onclick="savePatient()">Save patient</button>
+      <button class="btn sec" onclick="document.getElementById('pFormCard').classList.add('hidden')">Cancel</button>
+      <p id="pfMsg"></p>
+    </div>`;
+  filterPatients();
+}
+function filterPatients() {
+  const q = (document.getElementById('pSearch')?.value || '').toLowerCase();
+  const list = PATIENTS.filter(p => !q || p.name.toLowerCase().includes(q) || p.phone.includes(q));
+  document.getElementById('pList').innerHTML = list.length ? `<table><tr><th>Name</th><th>Phone</th><th>Last checkup</th><th></th></tr>` +
+    list.map(p => `<tr><td><b>${esc(p.name)}</b> (${p.age} yrs)<br><span class="muted">Allergy: ${esc(p.allergy)} ${p.notes ? ' | ' + esc(p.notes) : ''}</span></td>
+      <td>${esc(p.phone)}</td><td>${esc(p.last_checkup || '-')}</td>
+      <td>
+        <button class="btn sec sm" onclick="openPatientForm(${p.id})">Edit</button>
+        <a class="btn wa sm" target="_blank" href="${waLink(p.phone, 'Assalam-o-Alaikum ' + p.name + ', Dental Clinic se yaad-dihani: aapka checkup due hai. Appointment ke liye reply karein. Shukriya.')}">WhatsApp</a>
+        <button class="btn sec sm" onclick="setPin(${p.id})">Set PIN</button>
+      </td></tr>`).join('') + '</table>' : '<p class="muted">Koi mareez nahi mila. Pehla mareez manually add karein.</p>';
+}
+function openPatientForm(id) {
+  const c = document.getElementById('pFormCard'); c.classList.remove('hidden');
+  const p = id ? PATIENTS.find(x => x.id === id) : null;
+  curPatient = p || null;
+  document.getElementById('pFormTitle').textContent = p ? 'Edit patient — ' + p.name : 'Naya Mareez';
+  pfName.value = p?.name || ''; pfAge.value = p?.age || ''; pfPhone.value = p?.phone || '';
+  pfWa.value = p?.whatsapp || ''; pfAllergy.value = p?.allergy || 'None';
+  pfCheck.value = p?.last_checkup || ''; pfNotes.value = p?.notes || ''; pfPin.value = '';
+  document.getElementById('pfMsg').textContent = '';
+}
+async function savePatient() {
+  const body = { name: pfName.value.trim(), age: Number(pfAge.value) || 0, phone: pfPhone.value.trim(),
+    whatsapp: pfWa.value.trim(), allergy: pfAllergy.value.trim() || 'None',
+    last_checkup: pfCheck.value, notes: pfNotes.value.trim(), pin: pfPin.value.trim() };
+  const msg = document.getElementById('pfMsg');
+  if (!body.name || !body.phone) { msg.innerHTML = '<span class="err">Name aur phone zaroori hain.</span>'; return; }
+  try {
+    if (curPatient) await api('/patients/' + curPatient.id, 'PUT', body);
+    else await api('/patients', 'POST', body);
+    msg.innerHTML = '<span class="ok">Save ho gaya.</span>';
+    await loadPatients();
+  } catch (e) { msg.innerHTML = '<span class="err">' + esc(e.message) + '</span>'; }
+}
+async function setPin(id) {
+  const pin = prompt('Patient ke liye 4+ digit PIN likhein (ye PIN patient app me phone ke sath use hoga):');
+  if (!pin) return;
+  try { await api('/patients/' + id + '/set-pin', 'POST', { pin }); alert('PIN set ho gaya.'); }
+  catch (e) { alert(e.message); }
+}
+
+async function loadAppts() {
+  const t = todayISO();
+  const list = await api('/appointments?date=' + t);
+  const pats = {}; (await api('/patients')).forEach(p => pats[p.id] = p);
+  document.getElementById('tab-appts').innerHTML = `
+    <div class="card"><h2>Aaj ke Appointments — ${t}</h2>
+    <p class="muted">Total: ${list.length} | Aa gaye: ${list.filter(a => a.status === 'Arrived' || a.status === 'Done').length}</p>
+    ${list.length ? `<table><tr><th>Time</th><th>Patient</th><th>Treatment</th><th>Status</th><th></th></tr>` +
+      list.map(a => { const p = pats[a.patient_id] || {}; return `<tr><td>${esc(a.time)}</td>
+        <td><b>${esc(p.name || '?')}</b><br><span class="muted">${esc(p.phone || '')}</span></td>
+        <td>${esc(a.treatment_type)}</td>
+        <td><span class="chip ${a.status === 'Done' || a.status === 'Arrived' ? 'green' : a.status === 'Cancelled' ? 'red' : 'blue'}">${esc(a.status)}</span></td>
+        <td>${a.status === 'Booked' ? `<button class="btn sm" onclick="setAppt(${a.id},'Arrived')">Aa gaya</button> <button class="btn sec sm" onclick="setAppt(${a.id},'Done')">Done</button> <button class="btn sec sm" onclick="setAppt(${a.id},'Cancelled')">Cancel</button>` : ''}</td></tr>`; }).join('') + '</table>'
+      : '<p class="muted">Aaj koi appointment nahi. Neeche se book karein.</p>'}</div>
+    <div class="card"><h3>Appointment book karo</h3>
+      <div class="row">
+        <div><label>Patient</label><select id="apPatient"></select></div>
+        <div><label>Date</label><input id="apDate" type="date" value="${t}"></div>
+        <div><label>Time</label><select id="apTime">${['10:00 AM','10:30 AM','11:00 AM','11:30 AM','12:00 PM','4:00 PM','5:00 PM','6:00 PM'].map(x => `<option>${x}</option>`).join('')}</select></div>
+        <div><label>Treatment</label><select id="apType">${['Checkup','Cleaning','Scaling','RCT','Filling','Crown','Braces','Implant'].map(x => `<option>${x}</option>`).join('')}</select></div>
+      </div>
+      <button class="btn" onclick="bookAppt()">Book appointment</button> <span id="apMsg"></span>
+    </div>`;
+  document.getElementById('apPatient').innerHTML = Object.values(pats).map(p => `<option value="${p.id}">${esc(p.name)} — ${esc(p.phone)}</option>`).join('');
+}
+async function setAppt(id, st) { await api('/appointments/' + id, 'PUT', { status: st }); loadAppts(); }
+async function bookAppt() {
+  try {
+    await api('/appointments', 'POST', { patient_id: Number(apPatient.value), date: apDate.value, time: apTime.value, treatment_type: apType.value });
+    document.getElementById('apMsg').innerHTML = '<span class="ok">Book ho gaya.</span>'; loadAppts();
+  } catch (e) { document.getElementById('apMsg').innerHTML = '<span class="err">' + esc(e.message) + '</span>'; }
+}
+
+async function loadTreat() {
+  PATIENTS = await api('/patients');
+  TREATMENTS = await api('/treatments');
+  document.getElementById('tab-treat').innerHTML = `
+    <div class="card"><h2>Treatment Plans</h2>
+    <p class="muted">Doctor yahan treatment banata hai: type, daant, sittings, fee, agli sitting. Patient ko app me foran nazar aata hai.</p>
+    <div class="row">
+      <div><label>Patient</label><select id="trPatient">${PATIENTS.map(p => `<option value="${p.id}">${esc(p.name)} — ${esc(p.phone)}</option>`).join('')}</select></div>
+      <div><label>Type</label><select id="trType">${['Checkup','Cleaning','Scaling','RCT','Filling','Crown','Braces','Implant'].map(x => `<option>${x}</option>`).join('')}</select></div>
+      <div><label>Tooth (e.g. #36, Braces ke liye -)</label><input id="trTooth" value="-"></div>
+      <div><label>Total sittings</label><input id="trSit" type="number" value="3" min="1"></div>
+      <div><label>Total fee (Rs)</label><input id="trFee" type="number" value="6000" min="0"></div>
+      <div><label>Next sitting</label><input id="trNext" type="date"></div>
+    </div>
+    <button class="btn" onclick="addTreat()">Add treatment</button> <span id="trMsg"></span></div>
+    <div class="card"><div id="trList"></div></div>`;
+  renderTreatList();
+}
+function renderTreatList() {
+  const byP = {};
+  TREATMENTS.forEach(t => { (byP[t.patient_id] = byP[t.patient_id] || []).push(t); });
+  document.getElementById('trList').innerHTML = TREATMENTS.length ? Object.entries(byP).map(([pid, ts]) => {
+    const p = PATIENTS.find(x => x.id == pid) || {};
+    return `<h3>${esc(p.name || '?')} — ${esc(p.phone || '')}</h3>` + ts.map(t => `
+      <div style="border-bottom:1px solid #eee;padding:10px 0">
+        <b>${esc(t.type)} ${esc(t.tooth_no)}</b> — ${t.done_sittings}/${t.total_sittings} sittings
+        <span class="chip ${t.status === 'Complete' ? 'green' : 'amber'}">${esc(t.status)}</span><br>
+        <span class="muted">Fee ${rs(t.total_fee)} | Diya ${rs(t.paid)} | Baaki ${rs(t.remaining)} | Next: ${esc(t.next_sitting || '-')}</span>
+        <div class="bar" style="margin-top:6px"><div style="width:${t.total_sittings ? Math.round(t.done_sittings / t.total_sittings * 100) : 0}%"></div></div>
+        ${t.status !== 'Complete' ? `<button class="btn sm" style="margin-top:8px" onclick="completeSitting(${t.id})">Sitting complete karo (${t.done_sittings + 1}/${t.total_sittings})</button>` : ''}
+        <a class="btn wa sm" target="_blank" href="${waLink(p.phone, 'Assalam-o-Alaikum ' + (p.name || '') + ', Dental Clinic se reminder: aapka ' + t.type + ' ' + t.tooth_no + ' treatment adhoora hai (' + t.done_sittings + '/' + t.total_sittings + ' sittings). Agli sitting ' + (t.next_sitting || 'jald') + ' hai.')}">WhatsApp reminder</a>
+      </div>`).join('');
+  }).join('') : '<p class="muted">Abhi koi treatment nahi. Upar se add karein.</p>';
+}
+async function addTreat() {
+  try {
+    await api('/treatments', 'POST', { patient_id: Number(trPatient.value), type: trType.value, tooth_no: trTooth.value.trim() || '-', total_sittings: Number(trSit.value) || 1, total_fee: Number(trFee.value) || 0, next_sitting: trNext.value });
+    document.getElementById('trMsg').innerHTML = '<span class="ok">Add ho gaya.</span>';
+    TREATMENTS = await api('/treatments'); renderTreatList();
+  } catch (e) { document.getElementById('trMsg').innerHTML = '<span class="err">' + esc(e.message) + '</span>'; }
+}
+async function completeSitting(id) { await api('/treatments/' + id + '/complete-sitting', 'POST'); TREATMENTS = await api('/treatments'); renderTreatList(); }
+
+async function loadPay() {
+  PATIENTS = await api('/patients');
+  TREATMENTS = await api('/treatments');
+  const pend = await api('/reports/pending-payments');
+  document.getElementById('tab-pay').innerHTML = `
+    <div class="card"><h2>Kisht / Payment Entry</h2>
+    <div class="row">
+      <div><label>Treatment</label><select id="payTreat">${TREATMENTS.map(t => { const p = PATIENTS.find(x => x.id === t.patient_id) || {}; return `<option value="${t.id}">${esc(p.name || '?')} — ${esc(t.type)} ${esc(t.tooth_no)} (Baaki ${rs(t.remaining)})</option>`; }).join('')}</select></div>
+      <div><label>Amount (Rs)</label><input id="payAmt" type="number" min="1"></div>
+      <div><label>Mode</label><select id="payMode">${['Cash','JazzCash','Easypaisa','Card','Bank'].map(x => `<option>${x}</option>`).join('')}</select></div>
+      <div><label>Note</label><input id="payNote" placeholder="e.g. Kisht 2"></div>
+    </div>
+    <button class="btn" onclick="addPay()">Payment save karo</button> <span id="payMsg"></span></div>
+    <div class="card"><h3>Baaki payments (pending)</h3>
+    ${pend.length ? `<table><tr><th>Patient</th><th>Treatment</th><th>Total</th><th>Diya</th><th>Baaki</th><th></th></tr>` +
+      pend.map(t => `<tr><td>${esc(t.patient_name)}</td><td>${esc(t.type)} ${esc(t.tooth_no)}</td><td>${rs(t.total_fee)}</td><td>${rs(t.paid)}</td><td><b>${rs(t.remaining)}</b></td>
+        <td><a class="btn wa sm" target="_blank" href="${waLink(t.patient_phone, 'Assalam-o-Alaikum ' + t.patient_name + ', Dental Clinic se yaad-dihani: aapke ' + t.type + ' ' + t.tooth_no + ' treatment ki baaki payment ' + rs(t.remaining) + ' hai (total ' + rs(t.total_fee) + ', diya ' + rs(t.paid) + '). Barah-e-karam jald ada karein. Shukriya.')}">WhatsApp: payment due</a></td></tr>`).join('') + '</table>'
+      : '<p class="ok">Koi baaki payment nahi.</p>'}</div>`;
+}
+async function addPay() {
+  try {
+    await api('/payments', 'POST', { treatment_id: Number(payTreat.value), amount: Number(payAmt.value), mode: payMode.value, note: payNote.value.trim() });
+    document.getElementById('payMsg').innerHTML = '<span class="ok">Payment save ho gai.</span>'; loadPay();
+  } catch (e) { document.getElementById('payMsg').innerHTML = '<span class="err">' + esc(e.message) + '</span>'; }
+}
+
+async function loadIncome() {
+  const r = await api('/reports/income?days=7');
+  const byMode = Object.entries(r.by_mode).map(([k, v]) => `${esc(k)}: ${rs(v)}`).join('  |  ') || 'Aaj abhi tak koi payment nahi.';
+  document.getElementById('tab-income').innerHTML = `
+    <div class="card"><h2>Roz ki Kamai — ${r.date}</h2>
+    <p style="font-size:22px"><b>${rs(r.total)}</b></p><p class="muted">${byMode}</p>
+    <p>Baaki payment (sab mareez): <b>${rs(r.pending_total)}</b></p></div>
+    <div class="card"><h3>Pichle 7 din</h3>
+    ${r.last_days.map(d => { const max = Math.max(...r.last_days.map(x => x.amount), 1); return `<div style="margin:6px 0">${d.date} — ${rs(d.amount)}<div class="bar"><div style="width:${Math.round(d.amount / max * 100)}%"></div></div></div>`; }).join('')}</div>`;
+}
+
+async function loadDue() {
+  const due = await api('/reports/checkup-due');
+  document.getElementById('tab-due').innerHTML = `
+    <div class="card"><h2>Checkup Due List — 6 mahine poore</h2>
+    <p class="muted">${due.length} mareez due hain. WhatsApp par reminder bhejo, ya checkup ho jaye to date update karo.</p>
+    ${due.length ? `<table><tr><th>Patient</th><th>Last checkup</th><th>Din hue</th><th></th></tr>` +
+      due.map(p => `<tr><td><b>${esc(p.name)}</b><br><span class="muted">${esc(p.phone)}</span></td>
+        <td>${esc(p.last_checkup)}</td><td>${p.days_since} din</td>
+        <td><a class="btn wa sm" target="_blank" href="${waLink(p.phone, 'Assalam-o-Alaikum ' + p.name + ', Dental Clinic se yaad-dihani: aapka 6 mahine wala dental checkup due hai. Aakhri checkup ' + p.last_checkup + ' ko hua tha. Appointment ke liye reply karein. Shukriya.')}">WhatsApp reminder</a>
+        <button class="btn sec sm" onclick="markCheckup(${p.id})">Checkup ho gaya</button></td></tr>`).join('') + '</table>'
+      : '<p class="ok">Koi checkup due nahi.</p>'}</div>`;
+}
+async function markCheckup(id) {
+  await api('/patients/' + id + '/checkup', 'POST', { last_checkup: todayISO() });
+  loadDue();
+}
+boot();
+</script>
+</body>
+</html>
